@@ -130,8 +130,8 @@
                 starContainer.appendChild(star);
             }
 
-            // Click logging function
-            function logClick(linkName, linkUrl) {
+            // Logging function with extended data
+            function sendLog(data) {
                 const isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
                 const isTikTok = /TikTok|BytedanceWebview/i.test(navigator.userAgent);
                 let device = 'Desktop';
@@ -142,18 +142,27 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        linkName: linkName,
-                        link: linkUrl,
-                        device: device
+                        ...data,
+                        device: device,
+                        screenSize: `${screen.width}x${screen.height}`,
+                        referrer: document.referrer || 'Direct',
+                        language: navigator.language || 'Unknown'
                     })
                 }).catch(() => { });
             }
+
+            // Log page view on load
+            sendLog({ type: 'pageview' });
 
             // Track all link clicks
             document.querySelectorAll('.link-card').forEach(link => {
                 link.addEventListener('click', function () {
                     const name = this.querySelector('h2')?.textContent || 'Unknown';
-                    logClick(name, this.href);
+                    sendLog({
+                        type: 'click',
+                        linkName: name,
+                        link: this.href
+                    });
                 });
             });
 
