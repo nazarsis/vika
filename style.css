@@ -249,6 +249,11 @@ h1 {
     /* TikTok gradient effect for icon text if supported, else white */
 }
 
+.support-card .card-icon {
+    background: linear-gradient(135deg, rgba(255, 221, 0, 0.2), rgba(255, 107, 107, 0.2));
+    color: #ff6b6b;
+}
+
 .card-content {
     flex-grow: 1;
 }

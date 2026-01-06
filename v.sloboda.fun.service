@@ -1,0 +1,13 @@
+[Unit]
+Description=Vika Link-in-Bio Site
+After=network.target
+
+[Service]
+User=nazar
+Group=nazar
+WorkingDirectory=/home/nazar/v.sloboda.fun
+ExecStart=/usr/bin/python3 -m http.server 8081
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
