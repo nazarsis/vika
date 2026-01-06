@@ -130,6 +130,33 @@
                 starContainer.appendChild(star);
             }
 
+            // Click logging function
+            function logClick(linkName, linkUrl) {
+                const isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+                const isTikTok = /TikTok|BytedanceWebview/i.test(navigator.userAgent);
+                let device = 'Desktop';
+                if (isTikTok) device = 'TikTok App';
+                else if (isMobile) device = 'Mobile';
+
+                fetch('/api/log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        linkName: linkName,
+                        link: linkUrl,
+                        device: device
+                    })
+                }).catch(() => { });
+            }
+
+            // Track all link clicks
+            document.querySelectorAll('.link-card').forEach(link => {
+                link.addEventListener('click', function () {
+                    const name = this.querySelector('h2')?.textContent || 'Unknown';
+                    logClick(name, this.href);
+                });
+            });
+
             // YouTube tooltip logic
             const tooltip = document.getElementById('youtube-tooltip');
             let tooltipTimeout = null;
