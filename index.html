@@ -141,7 +141,14 @@
             document.querySelectorAll('.youtube-card').forEach(link => {
                 link.addEventListener('click', function (e) {
                     if (isTikTokBrowser) {
+                        // Check if tooltip was already shown
+                        if (sessionStorage.getItem('ytTooltipShown')) {
+                            // Second click - let it open normally
+                            return;
+                        }
+
                         e.preventDefault();
+                        sessionStorage.setItem('ytTooltipShown', 'true');
                         tooltip.classList.add('active');
 
                         // Auto-hide after 5 seconds
