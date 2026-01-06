@@ -1,11 +1,41 @@
+require('dotenv').config();
 const http = require('http');
 const https = require('https');
 
-const TELEGRAM_TOKEN = '900714287:AAH2od9MRwPRwvVLe36Q3dhRMk9MIWtscQk';
-const CHAT_ID = '25861608';
-const PORT = 3080;
+// Read from environment variables
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const PORT = process.env.PORT || 3080;
+
+// Security: Max body size (10KB)
+const MAX_BODY_SIZE = 10 * 1024;
+
+// Security: Escape HTML to prevent XSS
+function escapeHtml(text) {
+    if (typeof text !== 'string') return text;
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Validate input data
+function validateLogData(data) {
+    if (typeof data !== 'object' || data === null) return false;
+    if (data.linkName && typeof data.linkName !== 'string') return false;
+    if (data.link && typeof data.link !== 'string') return false;
+    if (data.device && typeof data.device !== 'string') return false;
+    return true;
+}
 
 function sendTelegram(message) {
+    if (!TELEGRAM_TOKEN || !CHAT_ID) {
+        console.error('Missing TELEGRAM_TOKEN or CHAT_ID');
+        return;
+    }
+
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
     const postData = JSON.stringify({
         chat_id: CHAT_ID,
@@ -50,10 +80,31 @@ const server = http.createServer((req, res) => {
         const ip = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown';
 
         let body = '';
-        req.on('data', chunk => { body += chunk; });
+        let bodySize = 0;
+
+        req.on('data', chunk => {
+            bodySize += chunk.length;
+            // DoS protection: reject if body too large
+            if (bodySize > MAX_BODY_SIZE) {
+                res.writeHead(413, { 'Content-Type': 'text/plain' });
+                res.end('Request too large');
+                req.destroy();
+                return;
+            }
+            body += chunk;
+        });
+
         req.on('end', () => {
             try {
                 const data = JSON.parse(body);
+
+                // Validate input
+                if (!validateLogData(data)) {
+                    res.writeHead(400);
+                    res.end('Invalid data');
+                    return;
+                }
+
                 const now = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' });
 
                 // Determine event type
@@ -69,25 +120,26 @@ const server = http.createServer((req, res) => {
                     else if (data.link?.includes('buymeacoffee')) emoji = '☕';
                 }
 
+                // Escape all user-provided data
                 let message = `${emoji} <b>${eventType}</b>\n\n`;
                 message += `🕐 <b>Час:</b> ${now}\n`;
-                message += `🌐 <b>IP:</b> ${ip}\n`;
-                message += `📱 <b>Пристрій:</b> ${data.device || 'Невідомо'}\n`;
+                message += `🌐 <b>IP:</b> ${escapeHtml(ip)}\n`;
+                message += `📱 <b>Пристрій:</b> ${escapeHtml(data.device || 'Невідомо')}\n`;
 
                 if (data.linkName && data.type !== 'pageview') {
-                    message += `📍 <b>Кнопка:</b> ${data.linkName}\n`;
+                    message += `📍 <b>Кнопка:</b> ${escapeHtml(data.linkName)}\n`;
                 }
 
                 if (data.screenSize) {
-                    message += `📐 <b>Екран:</b> ${data.screenSize}\n`;
+                    message += `📐 <b>Екран:</b> ${escapeHtml(data.screenSize)}\n`;
                 }
 
                 if (data.referrer) {
-                    message += `🔙 <b>Звідки:</b> ${data.referrer}\n`;
+                    message += `🔙 <b>Звідки:</b> ${escapeHtml(data.referrer)}\n`;
                 }
 
                 if (data.language) {
-                    message += `🗣 <b>Мова:</b> ${data.language}\n`;
+                    message += `🗣 <b>Мова:</b> ${escapeHtml(data.language)}\n`;
                 }
 
                 sendTelegram(message);
@@ -104,6 +156,15 @@ const server = http.createServer((req, res) => {
         res.writeHead(404);
         res.end('Not found');
     }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down...');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
 });
 
 server.listen(PORT, () => {
