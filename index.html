@@ -97,29 +97,69 @@
         <footer>
             <p>© 2026 Всі права захищено</p>
         </footer>
-    </main>
+        <!-- Tooltip for YouTube instruction -->
+        <div id="youtube-tooltip" class="yt-tooltip">
+            <div class="yt-tooltip-pointer">
+                <i class="fa-solid fa-hand-pointer"></i>
+            </div>
+            <div class="yt-tooltip-box">
+                <p>Для відкриття в <strong>YouTube</strong> натисніть<br><strong>⋯ → Відкрити в браузері</strong></p>
+                <div class="yt-tooltip-progress"></div>
+            </div>
+        </div>
 
-    <script>
-        const starContainer = document.getElementById('star-container');
-        const starCount = 100;
+        <script>
+            // Stars animation
+            const starContainer = document.getElementById('star-container');
+            const starCount = 100;
 
-        for (let i = 0; i < starCount; i++) {
-            const star = document.createElement('div');
-            star.classList.add('star');
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
 
-            const x = Math.random() * 100;
-            const y = Math.random() * 100;
-            const duration = Math.random() * 3 + 2; // 2-5s
-            const delay = Math.random() * 5;
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                const duration = Math.random() * 3 + 2;
+                const delay = Math.random() * 5;
 
-            star.style.left = `${x}%`;
-            star.style.top = `${y}%`;
-            star.style.setProperty('--duration', `${duration}s`);
-            star.style.setProperty('--delay', `${delay}s`);
+                star.style.left = `${x}%`;
+                star.style.top = `${y}%`;
+                star.style.setProperty('--duration', `${duration}s`);
+                star.style.setProperty('--delay', `${delay}s`);
 
-            starContainer.appendChild(star);
-        }
-    </script>
+                starContainer.appendChild(star);
+            }
+
+            // YouTube tooltip logic
+            const tooltip = document.getElementById('youtube-tooltip');
+            let tooltipTimeout = null;
+
+            // Detect TikTok in-app browser
+            const isTikTokBrowser = /TikTok|BytedanceWebview|musical_ly/i.test(navigator.userAgent);
+
+            // Intercept YouTube link clicks
+            document.querySelectorAll('.youtube-card').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    if (isTikTokBrowser) {
+                        e.preventDefault();
+                        tooltip.classList.add('active');
+
+                        // Auto-hide after 5 seconds
+                        if (tooltipTimeout) clearTimeout(tooltipTimeout);
+                        tooltipTimeout = setTimeout(() => {
+                            tooltip.classList.remove('active');
+                        }, 5000);
+                    }
+                    // In normal browser, let the link work as usual
+                });
+            });
+
+            // Tap anywhere to dismiss
+            tooltip.addEventListener('click', function () {
+                tooltip.classList.remove('active');
+                if (tooltipTimeout) clearTimeout(tooltipTimeout);
+            });
+        </script>
 </body>
 
 </html>
