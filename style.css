@@ -256,6 +256,7 @@ h1 {
 
 .card-content {
     flex-grow: 1;
+    text-align: center;
 }
 
 .card-content h2 {
@@ -267,6 +268,18 @@ h1 {
 .card-content p {
     font-size: 0.85rem;
     color: var(--text-muted);
+}
+
+/* BMC Logo */
+.bmc-icon {
+    background: rgba(255, 221, 0, 0.15);
+    padding: 0;
+}
+
+.bmc-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
 }
 
 .card-arrow {
